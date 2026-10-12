@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ロゼリーナのまほうカフェ - パティシエパズル</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"M PLUS Rounded 1c"', 'sans-serif'],
+                    },
+                    colors: {
+                        magical: {
+                            50: '#faf5ff',
+                            100: '#f3e8ff',
+                            200: '#e9d5ff',
+                            300: '#d8b4fe',
+                            400: '#c084fc',
+                            500: '#a855f7',
+                            600: '#9333ea',
+                            700: '#7e22ce',
+                            800: '#6b21a8',
+                            900: '#581c87',
+                        }
+                    },
+                    animation: {
+                        'bounce-slight': 'bounce-slight 0.5s ease-in-out',
+                        'float': 'float 3s ease-in-out infinite',
+                        'pulse-glow': 'pulse-glow 2s infinite',
+                    },
+                    keyframes: {
+                        'bounce-slight': {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-6px)' },
+                        },
+                        'float': {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-6px)' },
+                        },
+                        'pulse-glow': {
+                            '0%, 100%': { opacity: '0.5', transform: 'scale(0.96)' },
+                            '50%': { opacity: '0.85', transform: 'scale(1.04)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            background-color: #f5f3ff; /* ゼロリーナのラベンダーパープル背景 */
+            color: #3b2d54; /* 落ち着いたダークバイオレット */
+            overflow-x: hidden;
+        }
+
+        /* アニメーション */
+        @keyframes pop {
+            0% { transform: scale(0.92); opacity: 0; }
+            50% { transform: scale(1.04); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop { animation: pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+            20%, 40%, 60%, 80% { transform: translateX(6px); }
+        }
+        .animate-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+
+        @keyframes pulse-red {
+            0%, 100% { background-color: #fee2e2; }
+            50% { background-color: #fecaca; }
+        }
+        .timer-danger { animation: pulse-red 1s infinite; }
+
+        @keyframes fever-bg {
+            0% { background-color: #fdf4ff; }
+            50% { background-color: #f3e8ff; box-shadow: inset 0 0 30px #d8b4fe; }
+            100% { background-color: #fdf4ff; }
+        }
+        .fever-mode {
+            animation: fever-bg 1.2s infinite;
+        }
+
+        /* ボタンの3D効果 */
+        .btn-3d {
+            transition: all 0.1s ease;
+            box-shadow: 0 5px 0 0 var(--shadow-color, #c8b6a6);
+        }
+        .btn-3d:active:not(:disabled) {
+            transform: translateY(5px);
+            box-shadow: 0 0px 0 0 var(--shadow-color, #c8b6a6);
+        }
+        .btn-3d:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: translateY(5px);
+            box-shadow: 0 0px 0 0 var(--shadow-color, #c8b6a6);
+            filter: grayscale(70%);
+        }
+
+        .progress-bar {
+            transition: width 0.1s linear, background-color 0.3s ease;
+        }
+
+        /* 味覚シーソーゲージ */
+        .seesaw-container {
+            width: 100%;
+            height: 12px;
+            background: linear-gradient(to right, #38bdf8, #f1f5f9, #c084fc);
+            border-radius: 6px;
+            position: relative;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06) inset;
+        }
+        .seesaw-indicator {
+            width: 24px;
+            height: 24px;
+            background: #fff;
+            border: 3.5px solid #a855f7;
+            border-radius: 50%;
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.18);
+        }
+        .seesaw-center-mark {
+            position: absolute;
+            left: 50%;
+            top: -5px;
+            bottom: -5px;
+            width: 3px;
+            background: #cbd5e1;
+            transform: translateX(-50%);
+            border-radius: 2px;
+        }
+
+        /* カウンターの奥行き演出 */
+        .counter-top {
+            background: linear-gradient(180deg, #faf5ff 0%, #f3e8ff 100%);
+            box-shadow: 0 -4px 12px rgba(88, 28, 135, 0.04);
+        }
+
+        /* スイーツ出現ポップ */
+        .sweet-pop {
+            position: absolute;
+            font-size: 5.5rem;
+            pointer-events: none;
+            opacity: 0;
+            transform: scale(0);
+            z-index: 35;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-shadow: 0 10px 20px rgba(0,0,0,0.25);
+        }
+        .animate-sweet-pop {
+            animation: sweet-pop 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes sweet-pop {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; }
+            30% { transform: translate(-50%, -50%) scale(1.2) rotate(10deg); opacity: 1; }
+            70% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0; }
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            animation: fall 1.5s linear forwards;
+            pointer-events: none;
+            z-index: 60;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-30px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(300px) rotate(360deg); opacity: 0; }
+        }
+
+        /* キャラクター登場 */
+        .char-enter {
+            animation: slideInBottom 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes slideInBottom {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* 魔法エフェクトのグロー効果 */
+        .magic-glow {
+            filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.8)) drop-shadow(0 0 32px rgba(216, 180, 254, 0.55));
+        }
+
+        /* スクロールバーカスタム */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #c084fc;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-1 sm:p-4">
+
+    <!-- メインコンテナ（ゼロリーナカラーのラベンダー境界線） -->
+    <div id="main-container" class="w-full max-w-sm md:max-w-4xl lg:max-w-5xl bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-purple-300 flex flex-col h-[95vh] max-h-[890px] relative transition-colors duration-500">
+        
+        <!-- 音量切替ボタン（全画面共通・右上） -->
+        <button id="btn-sound-toggle" class="absolute top-3 right-3 z-50 bg-white/90 backdrop-blur-sm border-2 border-purple-300 hover:bg-purple-50 text-purple-600 rounded-full w-9 h-9 flex items-center justify-center shadow-md transition-all active:scale-95" title="BGM切替">
+            <span id="sound-icon" class="material-symbols-rounded text-xl">music_note</span>
+        </button>
+
+        <!-- ================= スタート画面（タイトル画像＋TOUCH TO STARTで確実にBGM再生） ================= -->
+        <div id="screen-start" class="absolute inset-0 z-40 flex flex-col justify-end items-center p-6 overflow-hidden animate-pop select-none bg-purple-950">
+            <!-- タイトル画像（全面綺麗に収まるよう object-contain & 背景カラーでスマホ・PC問わず見切れ防止） -->
+            <img src="img/title/ロゼリーナのまほうカフェ.png" alt="ロゼリーナのまほうカフェ" class="absolute inset-0 w-full h-full object-contain z-0 pointer-events-none">
+            
+            <!-- ボタン用グラデーション -->
+            <div class="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-purple-950/70 via-purple-950/30 to-transparent pointer-events-none z-10"></div>
+
+            <!-- 初回用 TOUCH TO START オーバーレイ（1クリックでBGM開始） -->
+            <div id="start-touch-overlay" class="absolute inset-0 z-30 flex flex-col items-center justify-end pb-8 sm:pb-12 bg-purple-950/25 backdrop-blur-[1px] cursor-pointer transition-opacity duration-300">
+                <div class="bg-white/95 text-purple-950 border-2 border-purple-300 py-3 px-7 sm:py-3.5 sm:px-8 rounded-full shadow-2xl animate-pulse flex flex-col items-center transform hover:scale-105 transition-transform">
+                    <span class="text-base sm:text-lg font-black tracking-widest flex items-center gap-2 text-purple-700">
+                        <span class="material-symbols-rounded text-2xl animate-bounce">touch_app</span> TOUCH TO START
+                    </span>
+                    <span class="text-[11px] text-purple-500 font-bold mt-0.5">画面をタッチしてBGMを再生♪</span>
+                </div>
+            </div>
+
+            <!-- タイトル画像の上に重ねて配置したメニューボタン（タッチ後に表示） -->
+            <div id="start-menu-buttons" class="relative z-20 w-full max-w-[280px] sm:max-w-[320px] flex flex-col gap-3 pb-3 sm:pb-6 transition-all duration-300 opacity-0 pointer-events-none">
+                <button id="btn-start" class="btn-3d w-full bg-purple-600 hover:bg-purple-500 text-white py-3.5 sm:py-4 rounded-2xl font-black text-xl flex items-center justify-center gap-2 shadow-2xl border-2 border-white/80" style="--shadow-color: #6b21a8;">
+                    <span class="material-symbols-rounded text-2xl">cake</span> はじめる
+                </button>
+                <button id="btn-how-to-play" class="btn-3d w-full bg-amber-400 hover:bg-amber-300 text-amber-950 py-3 sm:py-3.5 rounded-2xl font-black text-lg flex items-center justify-center gap-2 shadow-xl border-2 border-white/80" style="--shadow-color: #b45309;">
+                    <span class="material-symbols-rounded text-xl">menu_book</span> あそびかた
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= 遊び方説明画面（ゼロリーナ視点） ================= -->
+        <div id="screen-how-to-play" class="absolute inset-0 bg-white z-40 flex flex-col p-4 sm:p-5 hidden animate-pop">
+            
+            <!-- ヘッダー -->
+            <div class="flex items-center justify-between border-b-2 border-purple-200 pb-2 mb-2">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-rounded text-purple-600 text-2xl">menu_book</span>
+                    <h2 class="text-lg font-black text-purple-700">ゼロリーナの遊び方教室</h2>
+                </div>
+                <button id="btn-how-to-back" class="text-gray-400 hover:text-gray-600 p-1">
+                    <span class="material-symbols-rounded text-2xl">close</span>
+                </button>
+            </div>
+
+            <!-- ゼロリーナのメッセージ（主人公ゼロリーナ自身の視点） -->
+            <div class="flex items-center gap-3 bg-purple-50 p-3 rounded-2xl border border-purple-200 mb-2.5">
+                <img src="img/character/ゼロリーナ/ゼロリーナ.png" alt="ゼロリーナ" class="w-14 h-14 md:w-16 md:h-16 object-contain rounded-full bg-white p-1 border-2 border-purple-300 flex-shrink-0 animate-float">
+                <div class="text-xs md:text-sm font-bold text-purple-900 leading-snug">
+                    「いらっしゃいませ！私はゼロリーナよ♪<br>
+                    私の魔法調合カフェへようこそ！味のズレをピッタリ0にして最高のスイーツを作ろうね！」
+                </div>
+            </div>
+
+            <!-- スクロール可能な説明コンテンツ -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-2.5 text-xs md:text-sm">
+                
+                <!-- ルール1 -->
+                <div class="bg-amber-50 p-2.5 sm:p-3 rounded-2xl border-2 border-amber-200">
+                    <div class="font-black text-amber-800 text-sm md:text-base mb-1 flex items-center gap-1">
+                        <span>🎯 目標：味のズレを「0」に！</span>
+                    </div>
+                    <p class="text-gray-600 font-bold leading-relaxed">
+                        お客さんの注文には味の誤差（ズレ）があるの。<br>
+                        制限手数以内に、魔法計算ボタンでピッタリ<strong class="text-purple-600">「 0 」</strong>に調合してね！
+                    </p>
+                </div>
+
+                <!-- ルール2 -->
+                <div class="bg-purple-50 p-2.5 sm:p-3 rounded-2xl border-2 border-purple-200">
+                    <div class="font-black text-purple-800 text-sm md:text-base mb-1 flex items-center gap-1">
+                        <span>🔮 4つの魔法調合ボタン</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-1.5">
+                        <div class="bg-white p-2 rounded-xl border border-pink-300 font-bold text-gray-700 flex items-center gap-1">
+                            <span>🍓</span><span>甘くする魔法 (+)</span>
+                        </div>
+                        <div class="bg-white p-2 rounded-xl border border-sky-300 font-bold text-gray-700 flex items-center gap-1">
+                            <span>🍋</span><span>すっぱくする魔法 (-)</span>
+                        </div>
+                        <div class="bg-white p-2 rounded-xl border border-amber-300 font-bold text-gray-700 flex items-center gap-1">
+                            <span>🍯</span><span>倍増魔法 (×)</span>
+                        </div>
+                        <div class="bg-white p-2 rounded-xl border border-teal-300 font-bold text-gray-700 flex items-center gap-1">
+                            <span>🥛</span><span>まろやか魔法 (÷)</span>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-gray-500 font-bold mt-1.5">
+                        ※割り切れない割り算は魔法が使えなくなるから気をつけてね！
+                    </p>
+                </div>
+
+                <!-- ルール3 -->
+                <div class="bg-teal-50 p-2.5 sm:p-3 rounded-2xl border-2 border-teal-200">
+                    <div class="font-black text-teal-800 text-sm md:text-base mb-1 flex items-center gap-1">
+                        <span>⏳ 制限時間＆コンボ</span>
+                    </div>
+                    <p class="text-gray-600 font-bold leading-relaxed">
+                        全体の制限時間は<strong class="text-teal-700">60秒</strong>！<br>
+                        1問クリアごとに<strong class="text-purple-600">＋5秒回復</strong>！<br>
+                        ミスなく連続成功するとコンボがつながって高得点になるわ！
+                    </p>
+                </div>
+
+                <!-- ルール4 -->
+                <div class="bg-fuchsia-50 p-2.5 sm:p-3 rounded-2xl border-2 border-fuchsia-200">
+                    <div class="font-black text-fuchsia-800 text-sm md:text-base mb-1 flex items-center gap-1">
+                        <span>✨ 魔法のフィーバータイム</span>
+                    </div>
+                    <p class="text-gray-600 font-bold leading-relaxed">
+                        <strong class="text-fuchsia-700">5コンボ以上</strong>を達成するとフィーバー！<br>
+                        カフェ全体がキラキラ輝いて、獲得スコアが<strong class="text-purple-600">2倍</strong>に跳ね上がるわ！
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- 下部ボタン -->
+            <div class="pt-2 flex gap-2">
+                <button id="btn-how-to-start" class="btn-3d flex-1 bg-purple-600 hover:bg-purple-500 text-white py-3 rounded-2xl font-black text-base flex items-center justify-center gap-1 shadow-lg" style="--shadow-color: #6b21a8;">
+                    さっそくはじめる！
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= リザルト画面（主人公ゼロリーナ自身の振り返りセリフ） ================= -->
+        <div id="screen-result" class="absolute inset-0 bg-gradient-to-b from-purple-50 via-white to-pink-50 z-40 flex flex-col justify-between p-4 sm:p-6 hidden animate-pop overflow-y-auto custom-scrollbar">
+            <!-- 上部タイトル（ゼロリーナ自身の振り返り） -->
+            <div class="w-full text-center pt-1">
+                <h2 class="text-2xl sm:text-3xl font-black text-purple-700 mb-0.5">本日の営業終了！</h2>
+                <p class="text-xs text-purple-500 font-bold">ゼロリーナ「ふぅ〜！今日もいっぱい魔法スイーツを作ったわね！」</p>
+            </div>
+            
+            <!-- 中央コンテンツ：ゼロリーナの立ち絵 ＋ スコアカード -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 my-auto w-full max-w-xl mx-auto py-2">
+                
+                <!-- ゼロリーナの立ち絵（リザルト画面で大きく登場！） -->
+                <div class="w-32 h-32 sm:w-44 sm:h-44 md:w-52 md:h-52 flex-shrink-0 animate-float drop-shadow-xl relative flex items-center justify-center">
+                    <img src="img/character/ゼロリーナ/ゼロリーナ.png" alt="ゼロリーナ" class="w-full h-full object-contain">
+                </div>
+
+                <!-- スコア・ランクカード -->
+                <div class="bg-white/95 w-full flex-1 p-4 sm:p-5 rounded-3xl border-2 border-purple-200 text-center shadow-lg">
+                    <p class="text-xs text-gray-500 font-bold mb-1">本日の売上（スコア）</p>
+                    <p id="result-score" class="text-4xl sm:text-5xl font-black text-amber-500 mb-2 tracking-tight">0</p>
+                    
+                    <div class="flex justify-center items-baseline gap-2 border-t border-purple-100 pt-2 mb-2">
+                        <span class="text-xs text-gray-600 font-bold">パティシエランク：</span>
+                        <span id="result-rank" class="text-3xl sm:text-4xl font-black text-purple-600">C</span>
+                    </div>
+                    
+                    <!-- 主人公ゼロリーナ自身の振り返りセリフ吹き出し -->
+                    <div class="bg-purple-50 rounded-xl p-2.5 sm:p-3 border border-purple-100 text-left mt-1 shadow-inner">
+                        <div class="text-[10px] font-black text-purple-700 mb-1 flex items-center gap-1">
+                            <span class="material-symbols-rounded text-xs">auto_awesome</span> ゼロリーナのひとこと
+                        </div>
+                        <div class="text-xs sm:text-[13px] font-bold text-purple-950 leading-relaxed" id="result-comment">
+                            「う〜ん…今日はちょっと調合の計算を焦っちゃったかも…。お客さんを待たせちゃって反省ね。次はもっと落ち着いてピッタリ0を目指すわ！」
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 下部ボタン（スクロールせず常に画面下部に押し出されて見えるよう sticky / 確実配置） -->
+            <div class="w-full max-w-sm mx-auto flex flex-col gap-2.5 pt-3 pb-2 sticky bottom-0 bg-gradient-to-t from-pink-50 via-white/95 to-transparent z-20">
+                <button id="btn-retry" class="btn-3d w-full bg-purple-600 hover:bg-purple-500 active:scale-95 text-white py-3.5 sm:py-4 rounded-2xl font-black text-lg sm:text-xl shadow-xl flex items-center justify-center gap-2 border-2 border-white/80" style="--shadow-color: #6b21a8;">
+                    <span class="material-symbols-rounded text-2xl">replay</span> もう一度挑戦する
+                </button>
+                <button id="btn-result-title" class="btn-3d w-full bg-white hover:bg-purple-50 active:scale-95 text-purple-900 py-2.5 sm:py-3 rounded-2xl font-bold text-sm sm:text-base border-2 border-purple-200 shadow-md flex items-center justify-center gap-1.5" style="--shadow-color: #d8b4fe;">
+                    <span class="material-symbols-rounded text-xl text-purple-600">home</span> タイトルへもどる
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= プレイ画面 ================= -->
+        <!-- PC時は左右2カラム、スマホ時は3段構成。※アニメーションは削除しお客さんのみを描写 -->
+        <div id="screen-play" class="flex-1 flex flex-col md:flex-row w-full h-full relative overflow-hidden hidden">
+            
+            <!-- ---------------------------------------------------- -->
+            <!-- 【上段（PC時: 左カラム）】：お客さん専用エリア -->
+            <!-- ---------------------------------------------------- -->
+            <div class="h-[44%] md:h-full md:w-5/12 bg-purple-50/40 relative flex flex-col justify-between p-2.5 sm:p-4 border-b-2 md:border-b-0 md:border-r-2 border-purple-200" id="bg-area">
+                <!-- 背景ドット装飾（ラベンダーパープル） -->
+                <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#a855f7 2px, transparent 2px); background-size: 16px 16px;"></div>
+
+                <!-- 上部バッジ -->
+                <div class="flex justify-between items-center relative z-20 px-1 pt-0.5">
+                    <span class="text-[10px] sm:text-xs font-black text-purple-700 bg-white/90 px-3 py-1 rounded-full border border-purple-200 shadow-xs">
+                        ☕ カフェ対面カウンター
+                    </span>
+                    <span class="text-[10px] sm:text-xs font-bold text-purple-500 bg-purple-100/80 px-2.5 py-0.5 rounded-full border border-purple-200">
+                        来店中のお客さん
+                    </span>
+                </div>
+
+                <!-- お客さんキャラクターのみをゆったり大きく中央配置 -->
+                <div class="flex-1 flex items-center justify-center relative z-10 px-2 py-1 overflow-hidden">
+                    <div class="w-full flex flex-col items-center justify-center h-full relative">
+                        <img id="char-img" src="img/character/エルフ/normal.png" alt="お客さん" class="h-full max-h-[170px] sm:max-h-[200px] md:max-h-[300px] object-contain drop-shadow-lg transition-transform duration-300 char-enter">
+                    </div>
+                </div>
+
+                <!-- セリフボックス -->
+                <div class="w-full bg-white/95 border-2 border-purple-200 rounded-2xl p-2 sm:p-3 shadow-md z-20 relative transition-transform" id="dialogue-box">
+                    <div class="absolute -top-3 left-3 bg-purple-600 text-white text-[10px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm" id="char-name">
+                        エルフのお客さん
+                    </div>
+                    <div class="text-xs sm:text-[13px] md:text-sm font-bold text-gray-700 leading-snug mt-0.5 min-h-[30px] md:min-h-[42px] flex items-center" id="speech-bubble">
+                        「ふわふわいちごラテ」をお願い！
+                    </div>
+                </div>
+            </div>
+
+            <!-- ---------------------------------------------------- -->
+            <!-- 【PC時: 右カラム】（ステータス ＋ 中段：数字 ＋ 下段：計算ボタン） -->
+            <!-- ---------------------------------------------------- -->
+            <div class="flex-1 flex flex-col md:w-7/12 bg-white relative justify-between overflow-hidden">
+                
+                <!-- ヘッダー（タイマー＆スコア） -->
+                <header id="play-header" class="pt-2 pb-1 px-4 bg-white/95 border-b border-purple-100 flex-shrink-0 transition-colors">
+                    <div class="flex justify-between items-end mb-1 pr-8">
+                        <div class="text-sm font-bold flex flex-col">
+                            <span class="text-gray-400 text-[10px]">TIME</span>
+                            <span id="timer-text" class="text-2xl font-black leading-none text-purple-900">60.0</span>
+                        </div>
+                        <div class="text-right flex flex-col items-end">
+                            <div id="fever-text" class="text-amber-500 font-black text-[11px] hidden animate-pulse mb-0.5">✨FEVER TIME (SCORE x2)✨</div>
+                            <div class="text-[10px] text-gray-400 font-bold flex items-center leading-none">
+                                SCORE <span id="combo-text" class="text-purple-600 text-[10px] ml-1.5 hidden font-black">2 COMBO!</span>
+                            </div>
+                            <div id="score-text" class="text-xl font-black text-amber-500 leading-none mt-0.5">0</div>
+                        </div>
+                    </div>
+                    <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div id="timer-gauge" class="h-full bg-purple-500 progress-bar w-full"></div>
+                    </div>
+                </header>
+
+                <!-- ------------------------------------------------ -->
+                <!-- 【中段】：数字 ＆ 味覚シーソー ＆ 目標・残り手数 -->
+                <!-- ------------------------------------------------ -->
+                <div class="flex-1 flex flex-col justify-center px-3.5 py-1.5 relative bg-purple-50/20">
+                    
+                    <div class="bg-white/95 rounded-2xl p-2.5 sm:p-3 shadow-sm border border-purple-100 relative">
+                        
+                        <!-- 上部情報：目標 & 残り手数 -->
+                        <div class="flex items-center justify-between mb-0.5">
+                            <span class="text-xs font-bold text-gray-400">味のズレ（目標: <span class="text-purple-600 font-black">0</span>）</span>
+                            <div class="bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full text-xs font-bold shadow-xs">
+                                残り <span id="remaining-steps" class="text-sm font-black text-purple-600">3</span> 手
+                            </div>
+                        </div>
+
+                        <!-- 中央：数字（クリアな単独表示） -->
+                        <div class="relative flex items-center justify-center my-0.5 min-h-[64px] sm:min-h-[72px]">
+                            <div id="number-display" class="text-center text-[4rem] sm:text-[4.5rem] md:text-[5.2rem] leading-none font-black tracking-tighter text-purple-950 transition-colors duration-300 drop-shadow-sm">
+                                0
+                            </div>
+                        </div>
+
+                        <!-- 味覚シーソーゲージ -->
+                        <div class="w-full flex items-center gap-2 px-1 mt-0.5">
+                            <span class="text-[10px] font-black text-sky-500">🍋すっぱい(-)</span>
+                            <div class="seesaw-container flex-1">
+                                <div class="seesaw-center-mark"></div>
+                                <div id="seesaw-indicator" class="seesaw-indicator z-10 flex items-center justify-center text-[10px]">✨</div>
+                            </div>
+                            <span class="text-[10px] font-black text-purple-500">🍓あまい(+)</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ------------------------------------------------ -->
+                <!-- 【下段】：計算ボタン ＆ 補助ボタン ＆ 履歴 -->
+                <!-- ------------------------------------------------ -->
+                <div class="p-2.5 sm:p-3 bg-white border-t-2 border-purple-100 flex-shrink-0 counter-top">
+                    
+                    <!-- 4つの調合ボタン -->
+                    <div id="button-grid" class="grid grid-cols-4 gap-2 mb-1.5">
+                        <!-- JSで動的生成 -->
+                    </div>
+
+                    <!-- 補助ボタン & 履歴 -->
+                    <div class="flex justify-between items-center px-1">
+                        <div id="equation-history" class="text-gray-400 font-bold text-[11px] tracking-wider flex-1 truncate pr-2"></div>
+                        <div class="flex gap-2">
+                            <button id="btn-undo" class="bg-white hover:bg-gray-50 text-gray-500 p-2 rounded-xl border border-gray-300 font-bold flex items-center justify-center shadow-xs disabled:opacity-40 transition-all active:scale-95" title="1手戻す">
+                                <span class="material-symbols-rounded text-base">undo</span>
+                            </button>
+                            <button id="btn-reset" class="bg-white hover:bg-gray-50 text-gray-500 p-2 rounded-xl border border-gray-300 font-bold flex items-center justify-center shadow-xs disabled:opacity-40 transition-all active:scale-95" title="やり直す">
+                                <span class="material-symbols-rounded text-base">restart_alt</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- パーティクルコンテナ -->
+    <div id="particle-container" class="absolute inset-0 pointer-events-none z-[100] overflow-hidden"></div>
+
+    <script>
+        // ==========================================
+        //  定数・マスターデータ
+        // ==========================================
+        const INITIAL_TIME = 60.0;
+        const TIME_BONUS = 5.0;
+        const BASE_SCORE = 100;
+        const FEVER_THRESHOLD = 5;
+        
+        const MENU_NAMES = [
+            "ふわふわいちごラテ", "妖精の魔法パフェ", "星空のレモネード", 
+            "夢見パンケーキ", "ユニコーンティー", "天使のミルフィーユ"
+        ];
+        const SWEETS_EMOJIS = ['🍰', '🍨', '🍮', '🍩', '🥞', '🍧', '🧁', '🍹'];
+
+        // お客さんデータ（4種族、3画像、セリフ集）
+        const CUSTOMERS = [
+            { 
+                name: 'エルフのお客さん', 
+                folder: 'img/character/エルフ',
+                start: [
+                    '「[MENU]」をお願い！森の香りがする甘さにしてね。',
+                    '美味しい「[MENU]」が飲みたいな。'
+                ],
+                sweet: [
+                    'うーん、エルフには甘すぎるかも…！',
+                    'あまっ！お砂糖を入れすぎじゃない？'
+                ],
+                sour: [
+                    'すっぱいのは苦手なの…！もっと甘くして！',
+                    '刺激が強すぎるわ、落ち着く味にして！'
+                ],
+                close: [
+                    'いい匂い！あともう少しね！',
+                    'そうそう、その調子！森の風を感じるわ！'
+                ],
+                clear: [
+                    '完璧！最高に美味しいわ！森の泉のように澄んだ味ね！✨',
+                    '素晴らしいわ！お礼に森の花をあげる♪'
+                ],
+                fail: [
+                    'ちょっと…味が変ね…💧 私の注文、難しかったかしら？',
+                    'うーん…今回は遠慮しておくわね。'
+                ]
+            },
+            { 
+                name: 'サキュバスのお客さん', 
+                folder: 'img/character/サキュバス',
+                start: [
+                    'ふふっ、「[MENU]」をちょうだい。魅惑的なヤツをね。',
+                    '喉が渇いちゃったわ。「[MENU]」を作ってくれる？'
+                ],
+                sweet: [
+                    '甘美だけど…ちょっと甘ったるすぎるかしら？',
+                    'ん〜甘すぎて私の魅力がかすんじゃうわ！'
+                ],
+                sour: [
+                    'きゅっ…！酸っぱすぎて刺激的すぎるわよ！',
+                    'もっと蕩けるような甘さが欲しいのにな〜'
+                ],
+                close: [
+                    'あら、いい香り…心がとろけちゃいそう♡',
+                    'ふふ、あと一息ね。期待してるわよ♪'
+                ],
+                clear: [
+                    'んん〜っ♡ 完璧よ！トリコになっちゃいそう！ごちそうさま♪✨',
+                    '最高のデザートね！今夜夢に出てあげる♡'
+                ],
+                fail: [
+                    'あらら…調合失敗ね。これじゃ誘惑どころじゃないわ…残念。',
+                    'ふふ、次はもっと上手に作ってね？'
+                ]
+            },
+            { 
+                name: 'ネコのお客さん', 
+                folder: 'img/character/ネコ',
+                start: [
+                    'ニャー！「[MENU]」をたのむニャ！',
+                    'いい匂いに誘われてきたニャ。「[MENU]」ちょーだい！'
+                ],
+                sweet: [
+                    'あまーいニャ！舌がしびれちゃうニャ！',
+                    'シロップ入れすぎニャ〜！'
+                ],
+                sour: [
+                    'すっぱーーいニャ！！毛が逆立っちゃうニャ！',
+                    'すっぱいのはダメニャ！まろやかにしてニャ！'
+                ],
+                close: [
+                    'クンクン…！いい匂いがしてきたニャ！',
+                    'あとちょっとニャ！待ちきれないニャ〜！'
+                ],
+                clear: [
+                    'ニャオ〜ン！すっごく美味しいニャ！しあわせニャ〜！🐾✨',
+                    'ゴロゴロ…最高のスイーツニャ！また来るニャ！'
+                ],
+                fail: [
+                    'フニャァ…これじゃ飲めないニャ…。お腹空いたニャ…',
+                    'しょんぼりニャ…失敗だニャ…'
+                ]
+            },
+            { 
+                name: '精霊のお客さん', 
+                folder: 'img/character/精霊',
+                start: [
+                    'ポロン♪ 「[MENU]」をつくってほしいな！',
+                    'ふわり〜！「[MENU]」をお願いするよ！'
+                ],
+                sweet: [
+                    'あま〜い！星の光が甘さで曇っちゃいそう！',
+                    'お砂糖いっぱいだね！もうちょっと控えて〜！'
+                ],
+                sour: [
+                    'すっぱくてピリピリする〜！',
+                    'きゅ〜ってなっちゃう！まろやかにして！'
+                ],
+                close: [
+                    'キラキラ！すてきな魔力が満ちてきたよ！',
+                    'あともう少し！がんばって！'
+                ],
+                clear: [
+                    'わぁい！魔法のように美味しいよ！ポロロン♪✨',
+                    'キラキラの味がする！大満足だよ〜！'
+                ],
+                fail: [
+                    'しゅん…魔力のバランスが崩れちゃったみたい…。',
+                    '消えちゃいそう…また今度ね…'
+                ]
+            }
+        ];
+        
+        // 演算記号と素材定義（甘くする魔法 / すっぱくする魔法に対応）
+        const OP_CONFIG = {
+            '+': { symbol: '+', name: '甘口', emoji: '🍓', anim: 'sweet', colorClass: 'bg-pink-400', shadowColor: '#db2777', textColor: 'text-white' },
+            '-': { symbol: '-', name: '酸味', emoji: '🍋', anim: 'sour', colorClass: 'bg-sky-400', shadowColor: '#0284c7', textColor: 'text-white' },
+            '*': { symbol: '×', name: '倍増', emoji: '🍯', anim: 'sweet', colorClass: 'bg-amber-400', shadowColor: '#d97706', textColor: 'text-amber-900' },
+            '/': { symbol: '÷', name: '半減', emoji: '🥛', anim: 'sour', colorClass: 'bg-teal-400', shadowColor: '#0d9488', textColor: 'text-white' }
+        };
+
+        // ==========================================
+        //  BGM 管理
+        // ==========================================
+        const audioManager = {
+            titleBgm: new Audio('BGM/title.mp3'),
+            gameBgm: new Audio('BGM/game.mp3'),
+            isMuted: false,
+            currentTrack: null,
+
+            init() {
+                this.titleBgm.loop = true;
+                this.gameBgm.loop = true;
+                this.titleBgm.volume = 0.35;
+                this.gameBgm.volume = 0.35;
+            },
+
+            playTitle() {
+                if (this.currentTrack === this.titleBgm) return;
+                this.stopAll();
+                this.currentTrack = this.titleBgm;
+                if (!this.isMuted) {
+                    this.titleBgm.currentTime = 0;
+                    this.titleBgm.play().catch(() => {});
+                }
+            },
+
+            playGame() {
+                if (this.currentTrack === this.gameBgm) return;
+                this.stopAll();
+                this.currentTrack = this.gameBgm;
+                if (!this.isMuted) {
+                    this.gameBgm.currentTime = 0;
+                    this.gameBgm.play().catch(() => {});
+                }
+            },
+
+            stopAll() {
+                this.titleBgm.pause();
+                this.gameBgm.pause();
+            },
+
+            toggleMute() {
+                this.isMuted = !this.isMuted;
+                const icon = document.getElementById('sound-icon');
+                if (this.isMuted) {
+                    this.stopAll();
+                    icon.textContent = 'volume_off';
+                    icon.classList.add('text-gray-400');
+                    icon.classList.remove('text-purple-600');
+                } else {
+                    icon.textContent = 'music_note';
+                    icon.classList.remove('text-gray-400');
+                    icon.classList.add('text-purple-600');
+                    if (this.currentTrack) {
+                        this.currentTrack.play().catch(() => {});
+                    }
+                }
+                return this.isMuted;
+            }
+        };
+
+        // ==========================================
+        //  ゲーム状態
+        // ==========================================
+        let gameState = {
+            screen: 'start', // 'start', 'howToPlay', 'play', 'result'
+            time: INITIAL_TIME,
+            score: 0,
+            combo: 0,
+            isPlaying: false,
+            isFever: false,
+            hasStartedAudio: false,
+            
+            initialValue: 0,
+            currentValue: 0,
+            maxSteps: 0,
+            currentStep: 0,
+            buttons: [],
+            history: [],
+            lastTimerTime: 0,
+            
+            currentChar: null,
+            currentOrderName: ''
+        };
+
+        // DOM参照
+        const els = {
+            mainContainer: document.getElementById('main-container'),
+            screenStart: document.getElementById('screen-start'),
+            screenHowToPlay: document.getElementById('screen-how-to-play'),
+            screenPlay: document.getElementById('screen-play'),
+            screenResult: document.getElementById('screen-result'),
+            
+            startTouchOverlay: document.getElementById('start-touch-overlay'),
+            startMenuButtons: document.getElementById('start-menu-buttons'),
+            btnStart: document.getElementById('btn-start'),
+            btnHowToPlay: document.getElementById('btn-how-to-play'),
+            btnHowToBack: document.getElementById('btn-how-to-back'),
+            btnHowToStart: document.getElementById('btn-how-to-start'),
+            btnRetry: document.getElementById('btn-retry'),
+            btnResultTitle: document.getElementById('btn-result-title'),
+            btnSoundToggle: document.getElementById('btn-sound-toggle'),
+            
+            timerText: document.getElementById('timer-text'),
+            timerGauge: document.getElementById('timer-gauge'),
+            scoreText: document.getElementById('score-text'),
+            comboText: document.getElementById('combo-text'),
+            feverText: document.getElementById('fever-text'),
+            playHeader: document.getElementById('play-header'),
+            bgArea: document.getElementById('bg-area'),
+            
+            charImg: document.getElementById('char-img'),
+            charName: document.getElementById('char-name'),
+            speechBubble: document.getElementById('speech-bubble'),
+            dialogueBox: document.getElementById('dialogue-box'),
+            
+            remainingSteps: document.getElementById('remaining-steps'),
+            numberDisplay: document.getElementById('number-display'),
+            seesawIndicator: document.getElementById('seesaw-indicator'),
+            equationHistory: document.getElementById('equation-history'),
+            buttonGrid: document.getElementById('button-grid'),
+            
+            btnUndo: document.getElementById('btn-undo'),
+            btnReset: document.getElementById('btn-reset'),
+            particleContainer: document.getElementById('particle-container'),
+            
+            resultScore: document.getElementById('result-score'),
+            resultRank: document.getElementById('result-rank'),
+            resultComment: document.getElementById('result-comment')
+        };
+
+        let timerFrameId;
+
+        // ==========================================
+        //  初期化
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            audioManager.init();
+
+            // タイトルの「TOUCH TO START」タップ処理（1タップでBGM開始＆メニュー解放）
+            function unlockAudioAndShowMenu() {
+                if (!gameState.hasStartedAudio) {
+                    gameState.hasStartedAudio = true;
+                    audioManager.playTitle();
+                }
+                if (els.startTouchOverlay) {
+                    els.startTouchOverlay.classList.add('opacity-0', 'pointer-events-none');
+                }
+                if (els.startMenuButtons) {
+                    els.startMenuButtons.classList.remove('opacity-0', 'pointer-events-none');
+                    els.startMenuButtons.classList.add('opacity-100', 'pointer-events-auto');
+                }
+            }
+
+            if (els.startTouchOverlay) {
+                els.startTouchOverlay.addEventListener('click', unlockAudioAndShowMenu);
+                els.startTouchOverlay.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    unlockAudioAndShowMenu();
+                }, { passive: false });
+            }
+        });
+
+        // BGM切替ボタン
+        els.btnSoundToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            audioManager.toggleMute();
+        });
+
+        // ==========================================
+        //  画面遷移（完全排他制御）
+        // ==========================================
+        function showScreen(name) {
+            gameState.screen = name;
+            els.screenStart.classList.add('hidden');
+            els.screenHowToPlay.classList.add('hidden');
+            els.screenPlay.classList.add('hidden');
+            els.screenResult.classList.add('hidden');
+
+            if (name === 'start') {
+                els.screenStart.classList.remove('hidden');
+                audioManager.playTitle();
+                // 既にBGM再生済みならメニューボタンを表示状態に
+                if (gameState.hasStartedAudio) {
+                    if (els.startTouchOverlay) {
+                        els.startTouchOverlay.classList.add('opacity-0', 'pointer-events-none');
+                    }
+                    if (els.startMenuButtons) {
+                        els.startMenuButtons.classList.remove('opacity-0', 'pointer-events-none');
+                        els.startMenuButtons.classList.add('opacity-100', 'pointer-events-auto');
+                    }
+                }
+            } else if (name === 'howToPlay') {
+                els.screenHowToPlay.classList.remove('hidden');
+                audioManager.playTitle();
+            } else if (name === 'play') {
+                els.screenPlay.classList.remove('hidden');
+                audioManager.playGame();
+            } else if (name === 'result') {
+                els.screenResult.classList.remove('hidden');
+                audioManager.stopAll();
+            }
+        }
+
+        els.btnHowToPlay.addEventListener('click', () => showScreen('howToPlay'));
+        els.btnHowToBack.addEventListener('click', () => showScreen('start'));
+        els.btnResultTitle.addEventListener('click', () => showScreen('start'));
+
+        // ==========================================
+        //  タイマー処理
+        // ==========================================
+        function updateTimer(timestamp) {
+            if (!gameState.isPlaying) return;
+            if (!gameState.lastTimerTime) gameState.lastTimerTime = timestamp;
+            const delta = (timestamp - gameState.lastTimerTime) / 1000;
+            gameState.lastTimerTime = timestamp;
+
+            gameState.time -= delta;
+            
+            if (gameState.time <= 0) {
+                gameState.time = 0;
+                endGame();
+            } else {
+                timerFrameId = requestAnimationFrame(updateTimer);
+            }
+            renderTimer();
+        }
+
+        function renderTimer() {
+            els.timerText.textContent = gameState.time.toFixed(1);
+            const percentage = Math.max(0, Math.min(100, (gameState.time / INITIAL_TIME) * 100));
+            els.timerGauge.style.width = `${percentage}%`;
+
+            if (gameState.time <= 10 && gameState.time > 0) {
+                els.playHeader.classList.add('timer-danger');
+                els.timerGauge.classList.replace('bg-purple-500', 'bg-red-500');
+            } else {
+                els.playHeader.classList.remove('timer-danger');
+                els.timerGauge.classList.replace('bg-red-500', 'bg-purple-500');
+            }
+        }
+
+        // ==========================================
+        //  ゲーム開始・終了
+        // ==========================================
+        function startGame() {
+            showScreen('play');
+            
+            gameState.time = INITIAL_TIME;
+            gameState.score = 0;
+            gameState.combo = 0;
+            gameState.isPlaying = true;
+            gameState.isFever = false;
+            gameState.lastTimerTime = performance.now();
+            
+            updateScoreUI();
+            nextOrder();
+            
+            cancelAnimationFrame(timerFrameId);
+            timerFrameId = requestAnimationFrame(updateTimer);
+        }
+
+        function endGame() {
+            gameState.isPlaying = false;
+            cancelAnimationFrame(timerFrameId);
+            
+            showScreen('result');
+            els.resultScore.textContent = gameState.score;
+            
+            // プレイヤー＝主人公ゼロリーナ自身の振り返りセリフ
+            let rank = 'C';
+            let comment = '「う〜ん…今日はちょっと調合の計算を焦っちゃったかも…。お客さんを待たせちゃって反省ね。次はもっと落ち着いてピッタリ0を目指すわ！」';
+            if (gameState.score >= 10000) {
+                rank = 'S';
+                comment = '「やったーーっ！！今日のカフェは大・大・大繁盛よ！私の調合魔法、完全に冴えわたってたわね！最高のパティシエは私よ♪✨」';
+            } else if (gameState.score >= 5000) {
+                rank = 'A';
+                comment = '「ふふっ、大成功！お客さんもみんなとびきりの笑顔で大満足してくれたわ！私の特製スイーツ、大好評で嬉しいな♪」';
+            } else if (gameState.score >= 2000) {
+                rank = 'B';
+                comment = '「ふぅ、なんとか無事に営業を終えられたわ！美味しく作れたけど、もう少し早く正確に調合できたらもっと良かったかな。明日もがんばるぞ！」';
+            }
+            
+            els.resultRank.textContent = rank;
+            els.resultRank.className = `text-3xl sm:text-4xl font-black ${rank === 'S' ? 'text-amber-500' : rank === 'A' ? 'text-purple-600' : rank === 'B' ? 'text-pink-500' : 'text-gray-500'}`;
+            els.resultComment.textContent = comment;
+            
+            els.bgArea.classList.remove('fever-mode');
+        }
+
+        els.btnStart.addEventListener('click', startGame);
+        els.btnHowToStart.addEventListener('click', startGame);
+        els.btnRetry.addEventListener('click', startGame);
+
+        // ==========================================
+        //  セリフ＆キャラクターリアクション
+        // ==========================================
+        function sample(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        function triggerSpeechAnim() {
+            els.dialogueBox.classList.remove('animate-pop');
+            els.charImg.classList.remove('animate-bounce-slight');
+            void els.dialogueBox.offsetWidth;
+            els.dialogueBox.classList.add('animate-pop');
+            els.charImg.classList.add('animate-bounce-slight');
+        }
+
+        function speak(text) {
+            els.speechBubble.innerHTML = text;
+            triggerSpeechAnim();
+        }
+
+        function setCustomerState(state) {
+            if (!gameState.currentChar) return;
+            els.charImg.src = `${gameState.currentChar.folder}/${state}.png`;
+        }
+
+        // ==========================================
+        //  注文の生成
+        // ==========================================
+        function nextOrder() {
+            gameState.currentOrderName = sample(MENU_NAMES);
+            gameState.currentChar = sample(CUSTOMERS);
+            
+            // お客さん通常画像セット
+            setCustomerState('normal');
+            els.charImg.classList.remove('char-enter');
+            void els.charImg.offsetWidth;
+            els.charImg.classList.add('char-enter');
+            
+            els.charName.textContent = gameState.currentChar.name;
+            
+            // 最初のセリフ
+            const startText = sample(gameState.currentChar.start).replace('[MENU]', `<span class="text-purple-600">${gameState.currentOrderName}</span>`);
+            speak(startText);
+
+            // パズル生成（逆算アルゴリズム）
+            const steps = Math.floor(Math.random() * 2) + 3; // 3 or 4手
+            let currentVal = 0;
+            const usedOps = [];
+
+            for (let i = 0; i < steps; i++) {
+                const possibleOps = [];
+                for (let v = 1; v <= 15; v++) {
+                    possibleOps.push({ op: '+', val: v, rev: currentVal - v });
+                    possibleOps.push({ op: '-', val: v, rev: currentVal + v });
+                }
+                if (currentVal !== 0) {
+                    for (let v = 2; v <= 5; v++) {
+                        possibleOps.push({ op: '/', val: v, rev: currentVal * v });
+                        if (currentVal % v === 0) possibleOps.push({ op: '*', val: v, rev: currentVal / v });
+                    }
+                }
+                
+                const filtered = possibleOps.filter(o => Math.abs(o.rev) <= 99);
+                const selected = filtered[Math.floor(Math.random() * filtered.length)];
+                usedOps.push({ op: selected.op, val: selected.val });
+                currentVal = selected.rev;
+            }
+
+            const buttonSet = new Set(usedOps.map(o => `${o.op}${o.val}`));
+            const allOps = ['+', '-', '*', '/'];
+            while (buttonSet.size < 4) {
+                const rOp = allOps[Math.floor(Math.random() * allOps.length)];
+                const rVal = ['*', '/'].includes(rOp) ? (Math.floor(Math.random() * 4) + 2) : (Math.floor(Math.random() * 15) + 1);
+                buttonSet.add(`${rOp}${rVal}`);
+            }
+
+            gameState.initialValue = currentVal;
+            gameState.currentValue = currentVal;
+            gameState.maxSteps = steps;
+            gameState.currentStep = 0;
+            gameState.history = [];
+            
+            gameState.buttons = Array.from(buttonSet).map(str => ({
+                op: str[0], val: parseInt(str.substring(1))
+            })).sort(() => Math.random() - 0.5).slice(0, 4);
+
+            els.numberDisplay.className = "text-center text-[4rem] sm:text-[4.5rem] md:text-[5.2rem] leading-none font-black tracking-tighter text-purple-950 transition-colors duration-300 drop-shadow-sm";
+            
+            renderPuzzle();
+        }
+
+        // ==========================================
+        //  操作ハンドラ
+        // ==========================================
+        function handleOperation(index, btnEl) {
+            if (!gameState.isPlaying || gameState.currentValue === 0 || gameState.currentStep >= gameState.maxSteps) return;
+            
+            const btn = gameState.buttons[index];
+            const conf = OP_CONFIG[btn.op];
+            const prev = gameState.currentValue;
+            let next = prev;
+            
+            if (btn.op === '/' && prev % btn.val !== 0) return;
+
+            spawnIngredientParticle(btnEl, conf.emoji);
+
+            switch (btn.op) {
+                case '+': next += btn.val; break;
+                case '-': next -= btn.val; break;
+                case '*': next *= btn.val; break;
+                case '/': next /= btn.val; break;
+            }
+
+            gameState.history.push({
+                val: prev,
+                opText: `${conf.symbol} ${btn.val}`
+            });
+            
+            gameState.currentValue = next;
+            gameState.currentStep++;
+            
+            renderPuzzle();
+            checkResult();
+        }
+
+        function spawnIngredientParticle(btnEl, emoji) {
+            const rect = btnEl.getBoundingClientRect();
+            const targetRect = els.numberDisplay.getBoundingClientRect();
+            
+            const p = document.createElement('div');
+            p.textContent = emoji;
+            p.style.position = 'absolute';
+            p.style.fontSize = '1.8rem';
+            p.style.left = `${rect.left + rect.width/2 - 14}px`;
+            p.style.top = `${rect.top + rect.height/2 - 14}px`;
+            p.style.transition = 'all 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            p.style.pointerEvents = 'none';
+            p.style.zIndex = '100';
+            
+            document.body.appendChild(p);
+            
+            requestAnimationFrame(() => {
+                p.style.left = `${targetRect.left + targetRect.width/2 - 14}px`;
+                p.style.top = `${targetRect.top + targetRect.height/2 - 14}px`;
+                p.style.transform = 'scale(0.5) rotate(360deg)';
+                p.style.opacity = '0';
+            });
+            
+            setTimeout(() => p.remove(), 400);
+        }
+
+        function reactToTaste() {
+            if (gameState.currentValue === 0 || gameState.currentStep >= gameState.maxSteps) return;
+            
+            const val = gameState.currentValue;
+            let text = "";
+            
+            if (Math.abs(val) <= 10) {
+                text = sample(gameState.currentChar.close);
+            } else if (val > 15) {
+                text = sample(gameState.currentChar.sweet);
+            } else if (val < -15) {
+                text = sample(gameState.currentChar.sour);
+            } else {
+                return;
+            }
+            speak(text);
+        }
+
+        // ==========================================
+        //  結果判定
+        // ==========================================
+        function checkResult() {
+            if (gameState.currentValue === 0) {
+                // クリア！成功！
+                createParticles();
+                setCustomerState('success');
+
+                speak(`<span class="text-purple-600 font-bold">${sample(gameState.currentChar.clear)}</span>`);
+
+                // スコア計算
+                let comboMult = 1.0 + (gameState.combo * 0.1);
+                let remainingBonus = (gameState.maxSteps - gameState.currentStep) * 50;
+                let addScore = Math.floor((BASE_SCORE + remainingBonus) * comboMult);
+                
+                if (gameState.isFever) addScore *= 2;
+                
+                gameState.score += addScore;
+                gameState.combo++;
+                gameState.time += TIME_BONUS;
+                
+                updateScoreUI();
+                
+                setTimeout(() => {
+                    if (gameState.isPlaying) nextOrder();
+                }, 1400);
+                
+            } else if (gameState.currentStep >= gameState.maxSteps) {
+                // 失敗！
+                setCustomerState('failure');
+                els.numberDisplay.classList.add('animate-shake');
+                speak(`<span class="text-gray-500 font-bold">${sample(gameState.currentChar.fail)}</span>`);
+                
+                gameState.combo = 0;
+                updateScoreUI();
+                
+                setTimeout(() => {
+                    els.numberDisplay.classList.remove('animate-shake');
+                    if (gameState.isPlaying) nextOrder();
+                }, 1600);
+            } else {
+                reactToTaste();
+            }
+        }
+
+        // ==========================================
+        //  Undo & Reset
+        // ==========================================
+        els.btnUndo.addEventListener('click', () => {
+            if (gameState.history.length === 0 || !gameState.isPlaying || gameState.currentValue === 0) return;
+            const last = gameState.history.pop();
+            gameState.currentValue = last.val;
+            gameState.currentStep--;
+            renderPuzzle();
+            reactToTaste();
+        });
+
+        els.btnReset.addEventListener('click', () => {
+            if (gameState.currentStep === 0 || !gameState.isPlaying || gameState.currentValue === 0) return;
+            gameState.currentValue = gameState.initialValue;
+            gameState.currentStep = 0;
+            gameState.history = [];
+            renderPuzzle();
+            speak(sample(gameState.currentChar.start).replace('[MENU]', `<span class="text-purple-600">${gameState.currentOrderName}</span>`));
+        });
+
+        // ==========================================
+        //  パズル描画
+        // ==========================================
+        function renderPuzzle() {
+            els.remainingSteps.textContent = gameState.maxSteps - gameState.currentStep;
+            els.numberDisplay.textContent = gameState.currentValue;
+            
+            // シーソーゲージ (-50 〜 50 を 0% 〜 100% に)
+            let gaugePercent = 50 + (gameState.currentValue / 50) * 50;
+            gaugePercent = Math.max(5, Math.min(95, gaugePercent));
+            els.seesawIndicator.style.left = `${gaugePercent}%`;
+            
+            if (gameState.currentValue === 0) {
+                els.seesawIndicator.style.borderColor = '#4ade80';
+                els.seesawIndicator.textContent = '✨';
+            } else {
+                els.seesawIndicator.style.borderColor = '#a855f7';
+                els.seesawIndicator.textContent = '';
+            }
+
+            if (gameState.history.length > 0) {
+                const last = gameState.history[gameState.history.length - 1];
+                els.equationHistory.textContent = `${last.val} ${last.opText} = ${gameState.currentValue}`;
+            } else {
+                els.equationHistory.textContent = ' ';
+            }
+
+            els.btnUndo.disabled = gameState.history.length === 0 || gameState.currentValue === 0;
+            els.btnReset.disabled = gameState.currentStep === 0 || gameState.currentValue === 0;
+
+            els.buttonGrid.innerHTML = '';
+            const isFinished = gameState.currentStep >= gameState.maxSteps || gameState.currentValue === 0;
+            
+            gameState.buttons.forEach((btn, idx) => {
+                const conf = OP_CONFIG[btn.op];
+                const btnEl = document.createElement('button');
+                btnEl.className = `btn-3d ${conf.colorClass} ${conf.textColor} py-2 sm:py-2.5 rounded-2xl flex flex-col items-center justify-center gap-0.5 border border-white/50`;
+                btnEl.style.setProperty('--shadow-color', conf.shadowColor);
+                
+                btnEl.innerHTML = `
+                    <span class="text-lg sm:text-xl md:text-2xl leading-none">${conf.emoji}</span>
+                    <span class="text-[9px] md:text-[10px] font-bold leading-none bg-white/20 px-1 py-0.5 rounded-sm">${conf.name}</span>
+                    <div class="flex items-center font-black text-base sm:text-lg md:text-xl tracking-tighter mt-0.5">
+                        ${conf.symbol}${btn.val}
+                    </div>
+                `;
+                
+                if (isFinished || (btn.op === '/' && gameState.currentValue % btn.val !== 0)) {
+                    btnEl.disabled = true;
+                }
+                
+                btnEl.addEventListener('click', (e) => handleOperation(idx, btnEl));
+                els.buttonGrid.appendChild(btnEl);
+            });
+        }
+
+        function updateScoreUI() {
+            els.scoreText.textContent = gameState.score;
+            
+            if (gameState.combo >= FEVER_THRESHOLD) {
+                gameState.isFever = true;
+                els.bgArea.classList.add('fever-mode');
+                els.feverText.classList.remove('hidden');
+            } else {
+                gameState.isFever = false;
+                els.bgArea.classList.remove('fever-mode');
+                els.feverText.classList.add('hidden');
+            }
+
+            if (gameState.combo > 1) {
+                els.comboText.textContent = `${gameState.combo} COMBO!`;
+                els.comboText.classList.remove('hidden');
+                els.comboText.classList.remove('animate-pop');
+                void els.comboText.offsetWidth;
+                els.comboText.classList.add('animate-pop');
+            } else {
+                els.comboText.classList.add('hidden');
+            }
+        }
+
+        function createParticles() {
+            const colors = ['#c084fc', '#38bdf8', '#facc15', '#f472b6'];
+            for (let i = 0; i < 25; i++) {
+                const p = document.createElement('div');
+                p.className = 'confetti';
+                p.style.left = `${Math.random() * 100}%`;
+                p.style.top = `${Math.random() * 50}%`;
+                p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                p.style.animationDuration = `${Math.random() * 1 + 0.5}s`;
+                els.particleContainer.appendChild(p);
+                
+                setTimeout(() => p.remove(), 1500);
+            }
+        }
+    </script>
+</body>
+</html>
