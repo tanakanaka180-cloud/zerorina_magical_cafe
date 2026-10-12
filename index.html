@@ -227,23 +227,23 @@
         <!-- ================= スタート画面（タイトル画像＋TOUCH TO STARTで確実にBGM再生） ================= -->
         <div id="screen-start" class="absolute inset-0 z-40 flex flex-col justify-end items-center p-6 overflow-hidden animate-pop select-none bg-purple-950">
             <!-- タイトル画像（全面綺麗に収まるよう object-contain & 背景カラーでスマホ・PC問わず見切れ防止） -->
-            <img src="img/title/ゼロリーナのまほうカフェ.png" alt="ゼロリーナのまほうカフェ" class="absolute inset-0 w-full h-full object-contain z-0 pointer-events-none">
+            <img src="img/title/ロゼリーナのまほうカフェ.png" alt="ロゼリーナのまほうカフェ" class="absolute inset-0 w-full h-full object-contain z-0 pointer-events-none">
             
             <!-- ボタン用グラデーション -->
             <div class="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-purple-950/80 via-purple-950/40 to-transparent pointer-events-none z-10"></div>
 
-            <!-- 初回用 TOUCH TO START オーバーレイ（1タッチでBGM開始＆メニュー解放） -->
-            <div id="start-touch-overlay" class="absolute inset-0 z-30 flex flex-col items-center justify-end pb-8 sm:pb-12 bg-purple-950/25 backdrop-blur-[1px] cursor-pointer transition-opacity duration-300">
-                <div class="bg-white/95 text-purple-950 border-2 border-purple-300 py-3 px-7 sm:py-3.5 sm:px-8 rounded-full shadow-2xl animate-pulse flex flex-col items-center transform hover:scale-105 transition-transform">
+            <!-- 初回用 TOUCH TO START オーバーレイ（画面タッチで確実にBGMアンロック） -->
+            <div id="start-touch-overlay" class="absolute inset-0 z-30 flex flex-col items-center justify-end pb-12 sm:pb-16 bg-purple-950/20 backdrop-blur-[1px] cursor-pointer select-none">
+                <div class="bg-white/95 text-purple-950 border-2 border-purple-300 py-3 px-8 rounded-full shadow-2xl animate-pulse flex flex-col items-center pointer-events-none">
                     <span class="text-base sm:text-lg font-black tracking-widest flex items-center gap-2 text-purple-700">
                         <span class="material-symbols-rounded text-2xl animate-bounce">touch_app</span> TOUCH TO START
                     </span>
-                    <span class="text-[11px] text-purple-500 font-bold mt-0.5">画面をタッチしてBGMを再生♪</span>
+                    <span class="text-[11px] text-purple-500 font-bold mt-0.5">画面をタッチしてスタート♪</span>
                 </div>
             </div>
 
             <!-- メニューボタン（TOUCH TO START 後に表示） -->
-            <div id="start-menu-buttons" class="relative z-20 w-full max-w-[280px] sm:max-w-[320px] flex flex-col gap-3 pb-4 sm:pb-8 transition-all duration-300 opacity-0 pointer-events-none">
+            <div id="start-menu-buttons" class="relative z-20 w-full max-w-[280px] sm:max-w-[320px] flex flex-col gap-3 pb-4 sm:pb-8 hidden">
                 <button id="btn-start" class="btn-3d w-full bg-purple-600 hover:bg-purple-500 active:scale-95 text-white py-3.5 sm:py-4 rounded-2xl font-black text-xl flex items-center justify-center gap-2 shadow-2xl border-2 border-white/80" style="--shadow-color: #6b21a8;">
                     <span class="material-symbols-rounded text-2xl">cake</span> はじめる
                 </button>
@@ -872,40 +872,28 @@
             audioManager.init();
 
             // TOUCH TO START のタップ処理（BGM開始＆メニュー表示）
-            let isStartTouchProcessed = false;
             function handleStartTouch(e) {
-                if (isStartTouchProcessed) return;
-                isStartTouchProcessed = true;
-                if (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-
-                // ブラウザの音声再生ブロックを確実にクリアしてBGM開始
+                // 音声アンロック＆タイトルBGM開始
                 audioManager.unlock();
                 audioManager.playTitle();
 
-                // オーバーレイをフェードアウト
+                // オーバーレイを非表示にし、メニューボタンを表示
                 if (els.startTouchOverlay) {
-                    els.startTouchOverlay.classList.add('opacity-0', 'pointer-events-none');
+                    els.startTouchOverlay.classList.add('hidden');
                 }
-
-                // ボタンを表示（ただしゴーストタップが完了するまでクリックをブロック）
                 if (els.startMenuButtons) {
-                    els.startMenuButtons.classList.remove('opacity-0');
-                    // 350ms遅延させてポインタイベントを有効化（スマホのタップ貫通・誤爆を完全防止）
-                    setTimeout(() => {
-                        if (els.startMenuButtons) {
-                            els.startMenuButtons.classList.remove('pointer-events-none');
-                            els.startMenuButtons.classList.add('opacity-100', 'pointer-events-auto');
-                        }
-                    }, 350);
+                    els.startMenuButtons.classList.remove('hidden');
                 }
             }
 
             if (els.startTouchOverlay) {
-                els.startTouchOverlay.addEventListener('touchend', handleStartTouch, { passive: false });
-                els.startTouchOverlay.addEventListener('click', handleStartTouch);
+                // pointerup と click でPC・スマホ（iOS/Android）双方で確実に反応
+                els.startTouchOverlay.addEventListener('pointerup', (e) => {
+                    handleStartTouch(e);
+                });
+                els.startTouchOverlay.addEventListener('click', (e) => {
+                    handleStartTouch(e);
+                });
             }
         });
 
@@ -928,13 +916,10 @@
             if (name === 'start') {
                 els.screenStart.classList.remove('hidden');
                 audioManager.playTitle();
-                // 既にタッチ済みの場合はメニューを表示状態にしておく
-                if (audioManager.isUnlocked && els.startTouchOverlay) {
-                    els.startTouchOverlay.classList.add('opacity-0', 'pointer-events-none');
-                    if (els.startMenuButtons) {
-                        els.startMenuButtons.classList.remove('opacity-0', 'pointer-events-none');
-                        els.startMenuButtons.classList.add('opacity-100', 'pointer-events-auto');
-                    }
+                // すでにアンロック済みの場合はメニューボタンを表示したままにする
+                if (audioManager.isUnlocked) {
+                    if (els.startTouchOverlay) els.startTouchOverlay.classList.add('hidden');
+                    if (els.startMenuButtons) els.startMenuButtons.classList.remove('hidden');
                 }
             } else if (name === 'howToPlay') {
                 els.screenHowToPlay.classList.remove('hidden');
@@ -1331,4 +1316,73 @@
                 els.equationHistory.textContent = ' ';
             }
 
-         
+            els.btnUndo.disabled = gameState.history.length === 0 || gameState.currentValue === 0;
+            els.btnReset.disabled = gameState.currentStep === 0 || gameState.currentValue === 0;
+
+            els.buttonGrid.innerHTML = '';
+            const isFinished = gameState.currentStep >= gameState.maxSteps || gameState.currentValue === 0;
+            
+            gameState.buttons.forEach((btn, idx) => {
+                const conf = OP_CONFIG[btn.op];
+                const btnEl = document.createElement('button');
+                btnEl.className = `btn-3d ${conf.colorClass} ${conf.textColor} py-2 sm:py-2.5 rounded-2xl flex flex-col items-center justify-center gap-0.5 border border-white/50`;
+                btnEl.style.setProperty('--shadow-color', conf.shadowColor);
+                
+                btnEl.innerHTML = `
+                    <span class="text-lg sm:text-xl md:text-2xl leading-none">${conf.emoji}</span>
+                    <span class="text-[9px] md:text-[10px] font-bold leading-none bg-white/20 px-1 py-0.5 rounded-sm">${conf.name}</span>
+                    <div class="flex items-center font-black text-base sm:text-lg md:text-xl tracking-tighter mt-0.5">
+                        ${conf.symbol}${btn.val}
+                    </div>
+                `;
+                
+                if (isFinished || (btn.op === '/' && gameState.currentValue % btn.val !== 0)) {
+                    btnEl.disabled = true;
+                }
+                
+                btnEl.addEventListener('click', (e) => handleOperation(idx, btnEl));
+                els.buttonGrid.appendChild(btnEl);
+            });
+        }
+
+        function updateScoreUI() {
+            els.scoreText.textContent = gameState.score;
+            
+            if (gameState.combo >= FEVER_THRESHOLD) {
+                gameState.isFever = true;
+                els.bgArea.classList.add('fever-mode');
+                els.feverText.classList.remove('hidden');
+            } else {
+                gameState.isFever = false;
+                els.bgArea.classList.remove('fever-mode');
+                els.feverText.classList.add('hidden');
+            }
+
+            if (gameState.combo > 1) {
+                els.comboText.textContent = `${gameState.combo} COMBO!`;
+                els.comboText.classList.remove('hidden');
+                els.comboText.classList.remove('animate-pop');
+                void els.comboText.offsetWidth;
+                els.comboText.classList.add('animate-pop');
+            } else {
+                els.comboText.classList.add('hidden');
+            }
+        }
+
+        function createParticles() {
+            const colors = ['#c084fc', '#38bdf8', '#facc15', '#f472b6'];
+            for (let i = 0; i < 25; i++) {
+                const p = document.createElement('div');
+                p.className = 'confetti';
+                p.style.left = `${Math.random() * 100}%`;
+                p.style.top = `${Math.random() * 50}%`;
+                p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                p.style.animationDuration = `${Math.random() * 1 + 0.5}s`;
+                els.particleContainer.appendChild(p);
+                
+                setTimeout(() => p.remove(), 1500);
+            }
+        }
+    </script>
+</body>
+</html>
