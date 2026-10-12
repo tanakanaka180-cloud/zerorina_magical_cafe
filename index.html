@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ロゼリーナのまほうカフェ - パティシエパズル</title>
+    <title>ゼロリーナのまほうカフェ - パティシエパズル</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
@@ -227,7 +227,7 @@
         <!-- ================= スタート画面（タイトル画像＋TOUCH TO STARTで確実にBGM再生） ================= -->
         <div id="screen-start" class="absolute inset-0 z-40 flex flex-col justify-end items-center p-6 overflow-hidden animate-pop select-none bg-purple-950">
             <!-- タイトル画像（全面綺麗に収まるよう object-contain & 背景カラーでスマホ・PC問わず見切れ防止） -->
-            <img src="img/title/ロゼリーナのまほうカフェ.png" alt="ロゼリーナのまほうカフェ" class="absolute inset-0 w-full h-full object-contain z-0 pointer-events-none">
+            <img src="img/title/ゼロリーナのまほうカフェ.png" alt="ゼロリーナのまほうカフェ" class="absolute inset-0 w-full h-full object-contain z-0 pointer-events-none">
             
             <!-- ボタン用グラデーション -->
             <div class="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-purple-950/70 via-purple-950/30 to-transparent pointer-events-none z-10"></div>
@@ -684,7 +684,6 @@
             },
 
             playTitle() {
-                if (this.currentTrack === this.titleBgm) return;
                 this.stopAll();
                 this.currentTrack = this.titleBgm;
                 if (!this.isMuted) {
@@ -694,7 +693,6 @@
             },
 
             playGame() {
-                if (this.currentTrack === this.gameBgm) return;
                 this.stopAll();
                 this.currentTrack = this.gameBgm;
                 if (!this.isMuted) {
@@ -706,6 +704,7 @@
             stopAll() {
                 this.titleBgm.pause();
                 this.gameBgm.pause();
+                this.currentTrack = null;
             },
 
             toggleMute() {
@@ -1005,28 +1004,48 @@
             const startText = sample(gameState.currentChar.start).replace('[MENU]', `<span class="text-purple-600">${gameState.currentOrderName}</span>`);
             speak(startText);
 
-            // パズル生成（逆算アルゴリズム）
+            // パズル生成（逆算アルゴリズム：必ず0以外の数字から開始することを保証）
             const steps = Math.floor(Math.random() * 2) + 3; // 3 or 4手
             let currentVal = 0;
-            const usedOps = [];
+            let usedOps = [];
+            let attempts = 0;
 
-            for (let i = 0; i < steps; i++) {
-                const possibleOps = [];
-                for (let v = 1; v <= 15; v++) {
-                    possibleOps.push({ op: '+', val: v, rev: currentVal - v });
-                    possibleOps.push({ op: '-', val: v, rev: currentVal + v });
-                }
-                if (currentVal !== 0) {
-                    for (let v = 2; v <= 5; v++) {
-                        possibleOps.push({ op: '/', val: v, rev: currentVal * v });
-                        if (currentVal % v === 0) possibleOps.push({ op: '*', val: v, rev: currentVal / v });
+            // 最終的な初期値 currentVal が 0 にならないようループ（最大20回試行）
+            while ((currentVal === 0 || usedOps.length < steps) && attempts < 20) {
+                attempts++;
+                currentVal = 0;
+                usedOps = [];
+
+                for (let i = 0; i < steps; i++) {
+                    const possibleOps = [];
+                    // 1手目（ゴールから直前の1手）は、+0/-0にならず、0から離れる操作のみ
+                    for (let v = 1; v <= 15; v++) {
+                        possibleOps.push({ op: '+', val: v, rev: currentVal - v });
+                        possibleOps.push({ op: '-', val: v, rev: currentVal + v });
                     }
+                    if (currentVal !== 0) {
+                        for (let v = 2; v <= 5; v++) {
+                            possibleOps.push({ op: '/', val: v, rev: currentVal * v });
+                            if (currentVal % v === 0) possibleOps.push({ op: '*', val: v, rev: currentVal / v });
+                        }
+                    }
+                    
+                    // 各手で 0 に戻ってしまう手は除外（最終手以外で 0 になると即クリア扱い等の事故を防ぐ）
+                    const filtered = possibleOps.filter(o => Math.abs(o.rev) <= 99 && o.rev !== 0);
+                    if (filtered.length === 0) break;
+                    const selected = filtered[Math.floor(Math.random() * filtered.length)];
+                    usedOps.push({ op: selected.op, val: selected.val });
+                    currentVal = selected.rev;
                 }
-                
-                const filtered = possibleOps.filter(o => Math.abs(o.rev) <= 99);
-                const selected = filtered[Math.floor(Math.random() * filtered.length)];
-                usedOps.push({ op: selected.op, val: selected.val });
-                currentVal = selected.rev;
+            }
+
+            // 万が一のフェイルセーフ（何らかの理由で currentVal が 0 の場合）
+            if (currentVal === 0 || usedOps.length < steps) {
+                const fallbackOffset = (Math.random() < 0.5 ? 1 : -1) * (Math.floor(Math.random() * 9) + 5);
+                currentVal = fallbackOffset;
+                usedOps = [
+                    fallbackOffset > 0 ? { op: '-', val: fallbackOffset } : { op: '+', val: -fallbackOffset }
+                ];
             }
 
             const buttonSet = new Set(usedOps.map(o => `${o.op}${o.val}`));
