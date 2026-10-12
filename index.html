@@ -230,9 +230,9 @@
             <img src="img/title/ゼロリーナのまほうカフェ.png" alt="ゼロリーナのまほうカフェ" class="absolute inset-0 w-full h-full object-contain z-0 pointer-events-none">
             
             <!-- ボタン用グラデーション -->
-            <div class="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-purple-950/70 via-purple-950/30 to-transparent pointer-events-none z-10"></div>
+            <div class="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-purple-950/80 via-purple-950/40 to-transparent pointer-events-none z-10"></div>
 
-            <!-- 初回用 TOUCH TO START オーバーレイ（1クリックでBGM開始） -->
+            <!-- 初回用 TOUCH TO START オーバーレイ（1タッチでBGM開始＆メニュー解放） -->
             <div id="start-touch-overlay" class="absolute inset-0 z-30 flex flex-col items-center justify-end pb-8 sm:pb-12 bg-purple-950/25 backdrop-blur-[1px] cursor-pointer transition-opacity duration-300">
                 <div class="bg-white/95 text-purple-950 border-2 border-purple-300 py-3 px-7 sm:py-3.5 sm:px-8 rounded-full shadow-2xl animate-pulse flex flex-col items-center transform hover:scale-105 transition-transform">
                     <span class="text-base sm:text-lg font-black tracking-widest flex items-center gap-2 text-purple-700">
@@ -242,12 +242,12 @@
                 </div>
             </div>
 
-            <!-- タイトル画像の上に重ねて配置したメニューボタン（タッチ後に表示） -->
-            <div id="start-menu-buttons" class="relative z-20 w-full max-w-[280px] sm:max-w-[320px] flex flex-col gap-3 pb-3 sm:pb-6 transition-all duration-300 opacity-0 pointer-events-none">
-                <button id="btn-start" class="btn-3d w-full bg-purple-600 hover:bg-purple-500 text-white py-3.5 sm:py-4 rounded-2xl font-black text-xl flex items-center justify-center gap-2 shadow-2xl border-2 border-white/80" style="--shadow-color: #6b21a8;">
+            <!-- メニューボタン（TOUCH TO START 後に表示） -->
+            <div id="start-menu-buttons" class="relative z-20 w-full max-w-[280px] sm:max-w-[320px] flex flex-col gap-3 pb-4 sm:pb-8 transition-all duration-300 opacity-0 pointer-events-none">
+                <button id="btn-start" class="btn-3d w-full bg-purple-600 hover:bg-purple-500 active:scale-95 text-white py-3.5 sm:py-4 rounded-2xl font-black text-xl flex items-center justify-center gap-2 shadow-2xl border-2 border-white/80" style="--shadow-color: #6b21a8;">
                     <span class="material-symbols-rounded text-2xl">cake</span> はじめる
                 </button>
-                <button id="btn-how-to-play" class="btn-3d w-full bg-amber-400 hover:bg-amber-300 text-amber-950 py-3 sm:py-3.5 rounded-2xl font-black text-lg flex items-center justify-center gap-2 shadow-xl border-2 border-white/80" style="--shadow-color: #b45309;">
+                <button id="btn-how-to-play" class="btn-3d w-full bg-amber-400 hover:bg-amber-300 active:scale-95 text-amber-950 py-3 sm:py-3.5 rounded-2xl font-black text-lg flex items-center justify-center gap-2 shadow-xl border-2 border-white/80" style="--shadow-color: #b45309;">
                     <span class="material-symbols-rounded text-xl">menu_book</span> あそびかた
                 </button>
             </div>
@@ -668,42 +668,110 @@
         };
 
         // ==========================================
-        //  BGM 管理
+        //  BGM 管理（タイトル・遊び方・ゲーム中対応 ＆ 別画面時に自動一時停止）
         // ==========================================
         const audioManager = {
-            titleBgm: new Audio('BGM/title.mp3'),
-            gameBgm: new Audio('BGM/game.mp3'),
+            titleBgm: null,
+            gameBgm: null,
             isMuted: false,
             currentTrack: null,
+            isUnlocked: false,
 
             init() {
+                this.titleBgm = new Audio('BGM/title.mp3');
+                this.gameBgm = new Audio('BGM/game.mp3');
                 this.titleBgm.loop = true;
                 this.gameBgm.loop = true;
                 this.titleBgm.volume = 0.35;
                 this.gameBgm.volume = 0.35;
+                this.titleBgm.preload = 'auto';
+                this.gameBgm.preload = 'auto';
+
+                // スマホ等で別タブや他アプリ、バックグラウンドに移動した時にBGMを自動停止
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        this.pause();
+                    } else {
+                        // ページに戻ってきたら現在の画面のBGMを再開
+                        this.resume();
+                    }
+                });
+                window.addEventListener('pagehide', () => {
+                    this.pause();
+                });
+                window.addEventListener('blur', () => {
+                    this.pause();
+                });
+                window.addEventListener('focus', () => {
+                    this.resume();
+                });
+            },
+
+            // ユーザーの何らかの画面タッチ・クリックでWebAudio/Audioを確実にアンロック
+            unlock() {
+                if (this.isUnlocked) return;
+                this.isUnlocked = true;
+                [this.titleBgm, this.gameBgm].forEach(audio => {
+                    if (audio) {
+                        const playPromise = audio.play();
+                        if (playPromise !== undefined) {
+                            playPromise.then(() => {
+                                if (audio !== this.currentTrack) {
+                                    audio.pause();
+                                    audio.currentTime = 0;
+                                }
+                            }).catch(() => {});
+                        }
+                    }
+                });
             },
 
             playTitle() {
+                // すでにタイトルBGMが再生中の場合は、頭出し・再開せずにそのまま継続して流す
+                if (this.currentTrack === this.titleBgm && !this.titleBgm.paused) {
+                    return;
+                }
                 this.stopAll();
                 this.currentTrack = this.titleBgm;
-                if (!this.isMuted) {
+                if (!this.isMuted && this.titleBgm) {
                     this.titleBgm.currentTime = 0;
-                    this.titleBgm.play().catch(() => {});
+                    const p = this.titleBgm.play();
+                    if (p && p.catch) p.catch(() => {});
                 }
             },
 
             playGame() {
                 this.stopAll();
                 this.currentTrack = this.gameBgm;
-                if (!this.isMuted) {
+                if (!this.isMuted && this.gameBgm) {
                     this.gameBgm.currentTime = 0;
-                    this.gameBgm.play().catch(() => {});
+                    const p = this.gameBgm.play();
+                    if (p && p.catch) p.catch(() => {});
+                }
+            },
+
+            pause() {
+                if (this.currentTrack) {
+                    this.currentTrack.pause();
+                }
+            },
+
+            resume() {
+                if (!this.isMuted && this.currentTrack && !document.hidden) {
+                    const p = this.currentTrack.play();
+                    if (p && p.catch) p.catch(() => {});
                 }
             },
 
             stopAll() {
-                this.titleBgm.pause();
-                this.gameBgm.pause();
+                if (this.titleBgm) {
+                    this.titleBgm.pause();
+                    this.titleBgm.currentTime = 0;
+                }
+                if (this.gameBgm) {
+                    this.gameBgm.pause();
+                    this.gameBgm.currentTime = 0;
+                }
                 this.currentTrack = null;
             },
 
@@ -711,7 +779,7 @@
                 this.isMuted = !this.isMuted;
                 const icon = document.getElementById('sound-icon');
                 if (this.isMuted) {
-                    this.stopAll();
+                    this.pause();
                     icon.textContent = 'volume_off';
                     icon.classList.add('text-gray-400');
                     icon.classList.remove('text-purple-600');
@@ -719,9 +787,7 @@
                     icon.textContent = 'music_note';
                     icon.classList.remove('text-gray-400');
                     icon.classList.add('text-purple-600');
-                    if (this.currentTrack) {
-                        this.currentTrack.play().catch(() => {});
-                    }
+                    this.resume();
                 }
                 return this.isMuted;
             }
@@ -737,7 +803,6 @@
             combo: 0,
             isPlaying: false,
             isFever: false,
-            hasStartedAudio: false,
             
             initialValue: 0,
             currentValue: 0,
@@ -751,6 +816,7 @@
             currentOrderName: ''
         };
 
+        // DOM参照
         // DOM参照
         const els = {
             mainContainer: document.getElementById('main-container'),
@@ -805,27 +871,41 @@
         window.addEventListener('DOMContentLoaded', () => {
             audioManager.init();
 
-            // タイトルの「TOUCH TO START」タップ処理（1タップでBGM開始＆メニュー解放）
-            function unlockAudioAndShowMenu() {
-                if (!gameState.hasStartedAudio) {
-                    gameState.hasStartedAudio = true;
-                    audioManager.playTitle();
+            // TOUCH TO START のタップ処理（BGM開始＆メニュー表示）
+            let isStartTouchProcessed = false;
+            function handleStartTouch(e) {
+                if (isStartTouchProcessed) return;
+                isStartTouchProcessed = true;
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
                 }
+
+                // ブラウザの音声再生ブロックを確実にクリアしてBGM開始
+                audioManager.unlock();
+                audioManager.playTitle();
+
+                // オーバーレイをフェードアウト
                 if (els.startTouchOverlay) {
                     els.startTouchOverlay.classList.add('opacity-0', 'pointer-events-none');
                 }
+
+                // ボタンを表示（ただしゴーストタップが完了するまでクリックをブロック）
                 if (els.startMenuButtons) {
-                    els.startMenuButtons.classList.remove('opacity-0', 'pointer-events-none');
-                    els.startMenuButtons.classList.add('opacity-100', 'pointer-events-auto');
+                    els.startMenuButtons.classList.remove('opacity-0');
+                    // 350ms遅延させてポインタイベントを有効化（スマホのタップ貫通・誤爆を完全防止）
+                    setTimeout(() => {
+                        if (els.startMenuButtons) {
+                            els.startMenuButtons.classList.remove('pointer-events-none');
+                            els.startMenuButtons.classList.add('opacity-100', 'pointer-events-auto');
+                        }
+                    }, 350);
                 }
             }
 
             if (els.startTouchOverlay) {
-                els.startTouchOverlay.addEventListener('click', unlockAudioAndShowMenu);
-                els.startTouchOverlay.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    unlockAudioAndShowMenu();
-                }, { passive: false });
+                els.startTouchOverlay.addEventListener('touchend', handleStartTouch, { passive: false });
+                els.startTouchOverlay.addEventListener('click', handleStartTouch);
             }
         });
 
@@ -848,11 +928,9 @@
             if (name === 'start') {
                 els.screenStart.classList.remove('hidden');
                 audioManager.playTitle();
-                // 既にBGM再生済みならメニューボタンを表示状態に
-                if (gameState.hasStartedAudio) {
-                    if (els.startTouchOverlay) {
-                        els.startTouchOverlay.classList.add('opacity-0', 'pointer-events-none');
-                    }
+                // 既にタッチ済みの場合はメニューを表示状態にしておく
+                if (audioManager.isUnlocked && els.startTouchOverlay) {
+                    els.startTouchOverlay.classList.add('opacity-0', 'pointer-events-none');
                     if (els.startMenuButtons) {
                         els.startMenuButtons.classList.remove('opacity-0', 'pointer-events-none');
                         els.startMenuButtons.classList.add('opacity-100', 'pointer-events-auto');
@@ -860,6 +938,7 @@
                 }
             } else if (name === 'howToPlay') {
                 els.screenHowToPlay.classList.remove('hidden');
+                // タイトルBGMを途切れさせずそのまま継続再生
                 audioManager.playTitle();
             } else if (name === 'play') {
                 els.screenPlay.classList.remove('hidden');
@@ -870,9 +949,18 @@
             }
         }
 
-        els.btnHowToPlay.addEventListener('click', () => showScreen('howToPlay'));
-        els.btnHowToBack.addEventListener('click', () => showScreen('start'));
-        els.btnResultTitle.addEventListener('click', () => showScreen('start'));
+        els.btnHowToPlay.addEventListener('click', () => {
+            showScreen('howToPlay');
+        });
+        els.btnHowToBack.addEventListener('click', () => {
+            showScreen('start');
+        });
+        els.btnResultTitle.addEventListener('click', () => {
+            showScreen('start');
+        });
+        els.btnStart.addEventListener('click', startGame);
+        els.btnHowToStart.addEventListener('click', startGame);
+        els.btnRetry.addEventListener('click', startGame);
 
         // ==========================================
         //  タイマー処理
@@ -1243,73 +1331,4 @@
                 els.equationHistory.textContent = ' ';
             }
 
-            els.btnUndo.disabled = gameState.history.length === 0 || gameState.currentValue === 0;
-            els.btnReset.disabled = gameState.currentStep === 0 || gameState.currentValue === 0;
-
-            els.buttonGrid.innerHTML = '';
-            const isFinished = gameState.currentStep >= gameState.maxSteps || gameState.currentValue === 0;
-            
-            gameState.buttons.forEach((btn, idx) => {
-                const conf = OP_CONFIG[btn.op];
-                const btnEl = document.createElement('button');
-                btnEl.className = `btn-3d ${conf.colorClass} ${conf.textColor} py-2 sm:py-2.5 rounded-2xl flex flex-col items-center justify-center gap-0.5 border border-white/50`;
-                btnEl.style.setProperty('--shadow-color', conf.shadowColor);
-                
-                btnEl.innerHTML = `
-                    <span class="text-lg sm:text-xl md:text-2xl leading-none">${conf.emoji}</span>
-                    <span class="text-[9px] md:text-[10px] font-bold leading-none bg-white/20 px-1 py-0.5 rounded-sm">${conf.name}</span>
-                    <div class="flex items-center font-black text-base sm:text-lg md:text-xl tracking-tighter mt-0.5">
-                        ${conf.symbol}${btn.val}
-                    </div>
-                `;
-                
-                if (isFinished || (btn.op === '/' && gameState.currentValue % btn.val !== 0)) {
-                    btnEl.disabled = true;
-                }
-                
-                btnEl.addEventListener('click', (e) => handleOperation(idx, btnEl));
-                els.buttonGrid.appendChild(btnEl);
-            });
-        }
-
-        function updateScoreUI() {
-            els.scoreText.textContent = gameState.score;
-            
-            if (gameState.combo >= FEVER_THRESHOLD) {
-                gameState.isFever = true;
-                els.bgArea.classList.add('fever-mode');
-                els.feverText.classList.remove('hidden');
-            } else {
-                gameState.isFever = false;
-                els.bgArea.classList.remove('fever-mode');
-                els.feverText.classList.add('hidden');
-            }
-
-            if (gameState.combo > 1) {
-                els.comboText.textContent = `${gameState.combo} COMBO!`;
-                els.comboText.classList.remove('hidden');
-                els.comboText.classList.remove('animate-pop');
-                void els.comboText.offsetWidth;
-                els.comboText.classList.add('animate-pop');
-            } else {
-                els.comboText.classList.add('hidden');
-            }
-        }
-
-        function createParticles() {
-            const colors = ['#c084fc', '#38bdf8', '#facc15', '#f472b6'];
-            for (let i = 0; i < 25; i++) {
-                const p = document.createElement('div');
-                p.className = 'confetti';
-                p.style.left = `${Math.random() * 100}%`;
-                p.style.top = `${Math.random() * 50}%`;
-                p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                p.style.animationDuration = `${Math.random() * 1 + 0.5}s`;
-                els.particleContainer.appendChild(p);
-                
-                setTimeout(() => p.remove(), 1500);
-            }
-        }
-    </script>
-</body>
-</html>
+         
